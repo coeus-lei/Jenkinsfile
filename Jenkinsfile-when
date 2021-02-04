@@ -1,0 +1,101 @@
+pipeline {
+    agent any
+    parameters { 
+        choice(
+            choices: ['IOS-BUILD','ANDROID-BUILD','HOT-UPDATE'],
+            name: 'PROJECT',
+            description: 'please select：\n1，INPUT-IOS-BUILD\n2，INPUT-ANDROID-BUILD\n3，INPUT-HOT-UPDATE-'
+	    )
+	    extendedChoice description: '', 
+	    multiSelectDelimiter: ',', 
+	    name: 'Bundles', 
+	    quoteValue: false, 
+	    saveJSONParameterToFile: false, 
+	    type: 'PT_CHECKBOX', 
+	    value: 'a,b,c', 
+	    visibleItemCount: 3
+    } 
+    stages {
+        stage('RUNNING') {
+            steps {
+                input "RUNNING?"
+		sh 'echo pwd'
+		sh 'echo ${PROJECT}'
+		println env.PROJECT
+		println params.PROJECT
+            }
+        } 
+        stage('IOS-BUILD') {
+	    when {
+	        expression {
+		    env.PROJECT == 'IOS-BUILD'
+		}
+	    }
+	    input {
+	        message "Please input your version Num"
+		ok "Go"
+		submitter "admin,simon,vinci"
+		parameters {
+		    string(name: 'packageName', defaultValue: '', description: 'Please input your packageName')
+		    string(name: 'projectName', defaultValue: '', description: 'Please input your projectName')
+		    string(name: 'iosTeamID', defaultValue: '', description: 'Please input your iosTeamID')
+		    string(name: 'iosProfile', defaultValue: '', description: 'Please input your iosProfile')
+		    }
+            }
+            steps {
+                script {
+		    sh 'echo $packageName'
+		    sh 'echo $projectName'
+		    sh 'echo $iosTeamID'
+		    sh 'echo $iosProfile'
+                        }
+                    }
+                }
+	stage('ANDROID-BUILD') {
+	    when {
+	        expression {
+		    env.PROJECT == 'ANDROID-BUILD'
+		}  
+	    }
+	    input {
+	        message "Please input your version Num"
+		ok "Go"
+		submitter "admin,simon,vinci"
+		parameters {
+		    string(name: 'packageName', defaultValue: '', description: 'Please input your packageName')
+		    string(name: 'projectName', defaultValue: '', description: 'Please input your projectName')
+	    }
+	  }
+	    steps {
+	        script {
+		    sh 'echo $packageName'
+		    sh 'echo $projectName'
+		  }
+	    }
+	 }
+	 stage('HOT-UPDATE') {
+	     when {
+	         expression {
+		     env.PROJECT == 'HOT-UPDATE'
+		 }
+	     }
+	     input {
+	         message "Please input your version Num"
+		 ok "Go"
+		 submitter "admin,simon,vinci"
+		 parameters {
+		     string(name: 'Version', defaultValue: '', description: 'Please input your Version')
+		     string(name: 'modelName', defaultValue: '', description: 'Please input your modelName')
+		     string(name: 'remoteUrl', defaultValue: '', description: 'Please input your remoteUrl')
+		 }
+	     }
+	         steps {
+		     script {
+		         sh 'echo $Version'
+		         sh 'echo $modelName'
+			 sh 'echo $remoteUrl'
+	          }
+	      }
+	 }
+    }
+}
