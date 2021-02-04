@@ -1,0 +1,33 @@
+pipeline {
+    agent any
+    parameters { 
+        choice(
+            choices: ['redis-rsync','mongodb-rsync','mysql-rsync'],
+            name: 'PROJECT',
+            description: '请根据发布类型进行选择发布：\n1，输入-redis-rsync-同步redis数据\n2，输入-mongodb-rsync-同步mongodb数据\n3，输入-mysql-rsync-同步mysql数据 '
+            )
+    }
+    stages {
+        stage('发布确认') {
+            steps {
+                input "检查完成，是否发布?"
+            }
+        }                   
+        stage('代码推送') {
+            steps {
+            //echo "code sync"
+                script {
+                    if (env.PROJECT == 'redis-rsync') {
+                        echo "${params.PROJECT}---已经准备"
+                        } 
+                    else if (env.PROJECT == 'mongodb-rsync') {
+                            echo "${params.PROJECT}-已经准备"
+                        } 
+                    else if (env.PROJECT == 'mysql-rsync') {
+                            echo "${params.PROJECT}--节点还在准备中"
+                        }
+                    }
+                }
+            }
+        }
+    }
