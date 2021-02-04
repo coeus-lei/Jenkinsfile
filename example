@@ -1,0 +1,100 @@
+pipeline {
+  agent any
+  stages {
+    stage ('BUILD') {
+      steps {
+        sh 'mvn -v'
+      }
+    }
+    stage('TEST') {
+      environment {
+        TEST = 'This is TEST'
+      }
+      input {
+        message "Please input your version Num"
+        ok "Go"
+        submitter "admin,simon,Richard"
+        parameters {
+            string(name: 'Version', defaultValue: 'Version', description: 'Please input your version Num')
+            }
+      }
+     steps {
+        script {
+	        sh 'echo $Version'
+	    //sh 'id && cd /etc/ansible && ansible wayne_php -m ping'
+	  }
+	  }
+	}
+    stage('PUSH REMOTE REP') {
+      parallel {
+        stage('PUSH REP') {
+          environment {
+            REMOTE = 'This is REMOTE REP'
+          }
+          steps {
+            sh 'echo $REMOTE'
+          }
+        }
+        stage('PUSH') {
+          environment {
+            LOCAL = 'This is LOCAL REP'
+          }
+          steps {
+            sh 'echo $LOCAL'
+          }
+        }
+
+      }
+    }
+
+    stage('UAT') {
+      environment {
+        UAT = 'This is UAT'
+      }
+      input {
+        message "Please input your version Num"
+        ok "Go"
+        submitter "admin,anthony,Richard"
+        parameters {
+            string(name: 'Version', defaultValue: 'Version', description: 'Please input your version Num')
+            }
+      }
+      steps {
+        script {
+          sh 'echo $UAT $Version'
+          if(env.Status == 'Deploy') {
+            sh 'echo "$Status"'
+          } else {
+          if (env.Status == 'RollBack') {
+            sh 'echo "$Status"'
+	    sh 'echo "$Version"'
+          } else {
+            sh 'echo "exit"'
+          }
+          }
+        }
+      }
+    }
+
+    stage('STAG') {
+      environment {
+        STAG = 'This is STAG'
+      }
+      input {
+        message "Please input your version Num"
+        ok "Go"
+        submitter "admin,anthony"
+        parameters {
+            string(name: 'Version', defaultValue: 'Version', description: 'Please input your version Num')
+            }
+      }
+      steps {
+        input '检查完毕'
+        sh 'echo $STAG $Version'
+        script {
+	    sh 'echo $Version'
+          }
+          }
+        }
+    }
+}
