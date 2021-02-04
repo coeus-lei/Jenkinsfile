@@ -1,0 +1,131 @@
+pipeline {
+  agent any
+/*  parameters {
+    choice(
+        choices: ['Deploy','RollBack'],
+	name: 'Status'
+	description: '请根据发布类型选择发布：\n1，输入-Deploy-发布-最新代码\n2，输入-RollBack-发布-回滚'
+          )
+  } */
+  stages {
+    stage('BUILD') {
+      steps {
+        input '检查完成，是否发布？'
+      }
+    }
+
+    stage('TEST') {
+      environment {
+        TEST = 'This is TEST'
+      }
+      input {
+        message "Please input your version Num"
+        ok "Go"
+        submitter "admin,anthony"
+        parameters {
+            string(name: 'PERSON', defaultValue: 'Version', description: 'Please input your version Num')
+            }
+      }
+     steps {
+        sh 'echo $PERSON'
+        script {
+	  if(env.Status == 'Deploy') {
+	    sh 'echo "$Status"'
+	  } else {
+	  if (env.Status == 'RollBack') {
+	    sh 'echo "$Status"'
+	    sh 'echo "$Version"'
+	  } else {
+	    sh 'echo "exit"'
+	  }
+	  }
+	}
+      }
+    }
+
+    stage('PUSH REMOTE REP') {
+      parallel {
+        stage('PUSH REP') {
+          environment {
+            REMOTE = 'This is REMOTE REP'
+          }
+          steps {
+            sh 'echo $REMOTE'
+          }
+        }
+
+        stage('PUSH') {
+          environment {
+            LOCAL = 'This is LOCAL REP'
+          }
+          steps {
+            sh 'echo $LOCAL'
+          }
+        }
+
+      }
+    }
+
+    stage('UAT') {
+      environment {
+        UAT = 'This is UAT'
+      }
+      input {
+        message "Please input your version Num"
+        ok "Go"
+        submitter "admin,anthony"
+        parameters {
+            string(name: 'PERSON', defaultValue: 'Version', description: 'Please input your version Num')
+            }
+      }
+      steps {
+        script {
+//          input '检查完成，是否发布？'
+          
+          sh 'echo $UAT $PERSON'
+          if(env.Status == 'Deploy') {
+            sh 'echo "$Status"'
+          } else {
+          if (env.Status == 'RollBack') {
+            sh 'echo "$Status"'
+	    sh 'echo "$Version"'
+          } else {
+            sh 'echo "exit"'
+          }
+          }
+        }
+      }
+    }
+
+    stage('STAG') {
+      environment {
+        STAG = 'This is STAG'
+      }
+      input {
+        message "Please input your version Num"
+        ok "Go"
+        submitter "admin,anthony"
+        parameters {
+            string(name: 'PERSON', defaultValue: 'Version', description: 'Please input your version Num')
+            }
+      }
+      steps {
+        input '检查完毕'
+        sh 'echo $STAG $PERSON'
+        script {
+          if(env.Status == 'Deploy') {
+            sh 'echo "$Status"'
+          } else {
+          if (env.Status == 'RollBack') {
+            sh 'echo "$Status"'
+	    sh 'echo $Version'
+          } else {
+            sh 'echo "exit"'
+          }
+          }
+        }
+      }
+    }
+
+  }
+}
