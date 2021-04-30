@@ -1,0 +1,115 @@
+def createVersion() {
+    return new Date().format('yyyyMMddHHmmss') + "_${env.BUILD_ID}"
+}
+pipeline {
+	agent {
+	    label 'master'
+	}
+	environment {
+	    _version = createVersion()
+	    git_url_code = "your-code-git"
+	    git_url_conf = "your-conf-git"
+	    project_dir = "/data/www/${project}"
+		  Platform = ''
+	}
+	parameters {
+        extendedChoice description: '输入需要更新的项目',
+        multiSelectDelimiter: ' ',
+        name: 'PROJECT',
+        quoteValue: false,
+        saveJSONParameterToFile: false, 
+        type: 'PT_CHECKBOX',
+        value: '项目1,项目2,项目3,项目4,项目5',
+        visibleItemCount: 5
+        extendedChoice description: '输入需要跟新的选项',
+        multiSelectDelimiter: ' ',
+        name: 'PROJECTCONFIG',
+        quoteValue: false,
+        saveJSONParameterToFile: false, 
+        type: 'PT_CHECKBOX',
+        value: '配置跟新,jar包更新,游戏配置',
+        visibleItemCount: 3
+        string(name: 'packageName', defaultValue: '', description: 'Please input your packageName')
+    }
+	stages {
+	    stage ('发布确认') {
+	        steps {
+	            input "检查完成，是否发布?"
+	        }
+	    }
+		stage('代码拉取') {
+	        steps {
+	            sh 'mkdir -p ${your-code-dir}'
+	            dir("${your-code-dir}")
+	            {
+	                git credentialsId: '${Credentials}', branch: "${branch}", url: "${git_url_code}"
+	            }
+	        }
+		}
+// 	    stage ('构建JAR包') {
+// 	        steps {
+// 	            script {
+// 	                sh'''
+// 	                echo 1
+// 					cd java-platform-code && mvn clean && mvn package
+// '''
+// 	            }
+// 	        }
+// 	    }
+		stage('推送平台选择') {
+		    input {
+			    message "检查完成,是否发布?"
+				ok "Yes, we should"
+				parameters {
+				   choice(
+				       choices: ['推送平台1','推送平台2'],
+					   name: 'Platform',
+					   description: 'please select：\n1,推送平台1\n2,推送平台2'
+				   )
+				}
+			}
+			steps {
+			    echo "${Platform}"
+			    script {
+				    sh 'mkdir -p your-conf-fir'
+				    platform = "${Platform}"
+					echo "${platform}"
+				}
+				dir("your-conf-fir")
+				{
+				    git credentialsId: '${Credentials}', branch: "${Platform}", url: "${git_url_conf}"
+				}
+			}
+		}
+		stage('推送平台1') {
+		    when {
+			   expression {
+			       platform == '平台1'
+			   }
+			}
+		    steps {
+			    script {
+				    sh'''
+echo ${PROJECT}
+echo ${PROJECTCONFIG}
+'''
+				}
+			}
+		}
+		stage('推送平台2') {
+		    when {
+			    expression {
+				    platform == '平台2'
+				}
+			}
+			steps {
+			    script {
+				sh'''
+echo ${PROJECT}
+echo ${PROJECTCONFIG}
+'''
+				}
+			}
+		}
+	}
+}
