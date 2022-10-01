@@ -1,0 +1,157 @@
+def createVersion() {
+    return new Date().format('yyyyMMddHHmmss') + "_${env.BUILD_ID}"
+}
+
+pipeline {
+	agent {
+	    label 'master'
+	}
+	environment {
+	    _version = createVersion()
+	    tag = VersionNumber (versionNumberString: '${BUILDS_TODAY}')
+		version_id = "${sh(script: "/etc/ansible/control_version -version ${tag}", returnStdout: true)}"
+	    git_live = "${git_rep"}
+	}
+	parameters {
+	    gitParameter branch: '', 
+						branchFilter: 'origin/(.*)', 
+						defaultValue: 'master', 
+						description: '动态获取git仓库分支', 
+						listSize: '', 
+						name: 'git_branch', 
+						quickFilterEnabled: true, 
+						requiredParameter: true, 
+						selectedValue: 'DEFAULT', 
+						sortMode: 'DESCENDING_SMART', 
+						tagFilter: '*', 
+						type: 'GitParameterDefinition', 
+						useRepository: '${git_rep}'
+        
+	    extendedChoice description: 'select your upload nodes',
+	    multiSelectDelimiter: ' ',
+	    name: 'SERVER_NODE',
+	    quoteValue: false,
+	    saveJSONParameterToFile: false,
+	    type: 'PT_CHECKBOX',
+	    value: 'server,node',
+	    visibleItemCount: 2
+	}
+	stages {
+	    stage('submit') {
+	        steps {
+	            input "checkout,release?"
+	        }
+	    }
+	    stage('check git rep') {
+		    failFast false
+	        parallel {
+	            stage('pull code') {
+	            	when {
+						allOf {
+							expression {
+								env.git_branch != ''
+							}
+							expression {
+								env.SERVER_NODE != ''
+							}
+						}
+					}
+	            	stages {
+	            		stage('pull code') {
+	            			steps {
+	            				script{
+	            					sh '''
+										if [ ! -e ${JOB_NAME} ];then
+										    mkdir -p ${JOB_NAME} && echo "${JOB_NAME}"
+										else
+											rm -rf ${JOB_NAME}*
+										fi
+									'''
+	            					dir("${JOB_NAME}")
+	            					{
+	            						git credentialsId: '60bd8517-3138-4bcf-b1bf-a96a63591934', branch: "${git_branch}", url: "${git_rep}"
+	            					}
+	            				}
+	            			}
+	            		}
+	            		stage('jar compile') {
+		    				steps {
+			    				script {
+				    				sh'''
+					    				echo "compile"
+									'''
+								}
+							}
+						}
+					}
+	            }
+	        }
+	    }
+	    stage('Test push') {
+		    failFast false
+		    parallel {
+		    	stage('server push'){
+		    		when {
+		    			expression {
+		    				env.SERVER_NODE =~ 'server'
+		    			}
+		    		}
+		    		steps {
+		    			sh'''
+		    				echo "push server"
+		    			'''
+		    		}
+		    	}
+		    	stage('node push'){
+		    		when {
+		    			expression {
+		    				env.SERVER_NODE =~ 'node'
+		    			}
+		    		}
+		    		steps {
+		    			sh'''
+		    				echo "push client"
+		    			'''
+		    		}
+		    	}
+		    }
+		}
+		stage('production depot push') {
+			when {
+				allOf {
+					expression {
+						env.git_branch != ''
+					}
+					expression {
+						env.SERVER_NODE != ''
+					}
+				}
+			}
+			stages{
+				stage('push'){
+					input {
+						message "whether to push to the remote depot?"
+						ok "Yes,we should"
+					}
+					steps {
+						script {
+							sh'''
+								echo "push pro"
+							'''
+						}
+					}
+				}
+				stage('send message') {
+					steps {
+				   		script {
+					   		sh'''
+								echo "finish"
+								curl -s --retry 3 -X POST https://api.telegram.org/bot${TOKEN_ID}/sendMessage -d chat_id=-784612502 -d text="$(echo -e "分支: ${git_branch}\n项目: ${JOB_NAME}\n服务: ${SERVER_NODE}\n版本: ${version_id}\n")" > /dev/null 2>&1
+					   		'''
+						}
+					}
+				}
+			}
+		}
+	}
+}
