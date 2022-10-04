@@ -9,23 +9,23 @@ pipeline {
 	environment {
 	    _version = createVersion()
 	    tag = VersionNumber (versionNumberString: '${BUILDS_TODAY}')
-		version_id = "${sh(script: "/etc/ansible/control_version -version ${tag}", returnStdout: true)}"
+            version_id = "${sh(script: "/etc/ansible/control_version -version ${tag}", returnStdout: true)}"
 	    git_live = "${git_rep"}
 	}
 	parameters {
 	    gitParameter branch: '', 
-						branchFilter: 'origin/(.*)', 
-						defaultValue: 'master', 
-						description: '动态获取git仓库分支', 
-						listSize: '', 
-						name: 'git_branch', 
-						quickFilterEnabled: true, 
-						requiredParameter: true, 
-						selectedValue: 'DEFAULT', 
-						sortMode: 'DESCENDING_SMART', 
-						tagFilter: '*', 
-						type: 'GitParameterDefinition', 
-						useRepository: '${git_rep}'
+            branchFilter: 'origin/(.*)', 
+            defaultValue: 'master', 
+            description: '动态获取git仓库分支', 
+            listSize: '', 
+            name: 'git_branch', 
+            quickFilterEnabled: true, 
+            requiredParameter: true, 
+            selectedValue: 'DEFAULT', 
+            sortMode: 'DESCENDING_SMART', 
+            tagFilter: '*', 
+            type: 'GitParameterDefinition', 
+            useRepository: '${git_rep}'
         
 	    extendedChoice description: 'select your upload nodes',
 	    multiSelectDelimiter: ' ',
