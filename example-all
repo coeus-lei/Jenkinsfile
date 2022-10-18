@@ -1,0 +1,864 @@
+pipeline {
+	agent {
+	    label 'master'
+	}
+	environment {
+	    sub_project = 'lua'
+	}
+	parameters {
+	    extendedChoice description: '选择跟新内容',
+	    multiSelectDelimiter: ' ',
+	    name: 'SERVER_CONTENT',
+	    quoteValue: false,
+	    saveJSONParameterToFile: false,
+	    type: 'PT_CHECKBOX',
+	    value: '',
+	    visibleItemCount: 6
+
+	    extendedChoice description: '选择跟新的服务器节点',
+	    multiSelectDelimiter: ' ',
+	    name: 'SERVER_NODE',
+	    quoteValue: false,
+	    saveJSONParameterToFile: false,
+	    type: 'PT_CHECKBOX',
+	    value: '',
+	    visibleItemCount: 8
+
+	    extendedChoice description: '选择跟新节点auth的服务',
+	    multiSelectDelimiter: ' ',
+	    name: 'SERVER_AUTH',
+	    quoteValue: false,
+	    saveJSONParameterToFile: false,
+	    type: 'PT_CHECKBOX',
+	    value: '',
+	    visibleItemCount: 2
+
+	    extendedChoice description: '选择跟新节点gate的服务',
+	    multiSelectDelimiter: ' ',
+	    name: 'SERVER_GATE',
+	    quoteValue: false,
+	    saveJSONParameterToFile: false,
+	    type: 'PT_CHECKBOX',
+	    value: '',
+	    visibleItemCount: 2
+
+	    extendedChoice description: '选择跟新节点login服务',
+	    multiSelectDelimiter: ' ',
+	    name: 'SERVER_LOGIN',
+	    quoteValue: false,
+	    saveJSONParameterToFile: false,
+	    type: 'PT_CHECKBOX',
+	    value: '',
+	    visibleItemCount: 1
+
+	    extendedChoice description: '选择跟新节点tcp服务',
+	    multiSelectDelimiter: ' ',
+	    name: 'SERVER_TCP',
+	    quoteValue: false,
+	    saveJSONParameterToFile: false,
+	    type: 'PT_CHECKBOX',
+	    value: '',
+	    visibleItemCount: 1
+
+	    extendedChoice description: '选择跟新节点game-A服务',
+	    multiSelectDelimiter: ' ',
+	    name: 'SERVER_GAME_A',
+	    quoteValue: false,
+	    saveJSONParameterToFile: false,
+	    type: 'PT_CHECKBOX',
+		value: '',
+	    visibleItemCount: 10
+
+	    extendedChoice description: '选择跟新节点game-B服务',
+	    multiSelectDelimiter: ' ',
+	    name: 'SERVER_GAME_B',
+	    quoteValue: false,
+	    saveJSONParameterToFile: false,
+	    type: 'PT_CHECKBOX',
+		value: '',
+	    visibleItemCount: 22
+		choice(
+		    description: '选择重载游戏方式',
+			name: 'Method',
+			choices: ['restart','reload']
+		)
+		string(name: 'version_id', defaultValue: '', description: '选择输入对应版本号参数进行发布')
+	}
+	stages {
+	    stage(发布确认) {
+	        steps {
+	            input '检查完成,是否发布'
+	        }
+	    }
+	    stage('Auth节点推送') {
+		    failFast false
+		    when {
+			    expression {
+				    env.SERVER_NODE =~ 'auth'
+				}
+			}
+   	        parallel {
+   	            stage('authsvrd推送') {
+   	                when {
+   	                    expression {
+   	                        env.SERVER_AUTH =~ 'authsvrd'
+   	                    }
+   	                }
+   					stages {
+						stage('CHESS-GAMES') {
+						    when {
+							    expression {
+								    env.SERVER_CONTENT =~ 'CHESS-GAMES'
+								}
+							}
+							steps {
+							    sh'''
+									echo 1
+								'''
+							}
+						}
+					}
+				}
+   				stage('logindbsvrd') {
+				    when {
+   						expression {
+   						    env.SERVER_AUTH =~ 'logindbsvrd'
+   						}
+   					}
+                    stages {
+						stage('CHESS-GAMES推送') {
+						    when {
+							    expression {
+								    env.SERVER_CONTENT =~ 'CHESS-GAMES'
+								}
+							}
+							steps {
+							    sh'''
+									echo 1
+								'''
+							}
+						}
+					}					
+		    	}
+				stage('CHESS-PROTO推送') {
+				    when {
+					    expression {
+						    env.SERVER_CONTENT =~ 'CHESS-PROTO'
+						}
+					}
+					steps {
+					    sh'''
+							echo 1
+						'''
+					}
+				}
+				stage('CHESS-COMMON推送') {
+				    when {
+					    expression {
+						    env.SERVER_CONTENT =~ 'CHESS-COMMON'
+						}
+					}
+					steps {
+					    sh'''
+							echo 1
+						'''
+					}
+				}
+				stage('LOCAL-COMMON推送') {
+				    when {
+					    expression {
+						    env.SERVER_CONTENT =~ 'LOCAL-COMMON'
+						}
+					}
+					steps {
+					    sh'''
+							echo 1
+						'''
+					}
+				}
+				stage('CHESS-RELEASE推送') {
+				    when {
+					    expression {
+						    env.SERVER_CONTENT =~ 'CHESS-RELEASE'
+						}
+					}
+					steps {
+					    sh'''
+							echo 1
+						'''
+					}
+				}
+   	        }
+		}
+		stage('Gate节点推送') {
+		    failFast false
+			when {
+			    expression {
+				    env.SERVER_NODE =~ 'gate'
+				}
+			}
+			parallel {
+			    stage('datadbsvrd推送') {
+				    when {
+					    expression {
+						    env.SERVER_GATE =~ 'datadbsvrd'
+						}
+					}
+					stages {
+						stage('CHESS-GAMES') {
+						    failFast false
+						    when {
+							    expression {
+								    env.SERVER_CONTENT =~ 'CHESS-GAMES'
+								}
+							}
+							steps {
+							    sh'''
+									echo 1
+								'''
+							}
+						}
+					}
+				}
+				stage('gatesvrd') {
+				    when {
+					    expression {
+						    env.SERVER_GATE =~ 'gatesvrd'
+						}
+					}
+					stages {
+						stage('CHESS-GAMES') {
+						    failFast false
+						    when {
+							    expression {
+								    env.SERVER_CONTENT =~ 'CHESS-GAMES'
+								}
+							}
+							steps {
+							    sh'''
+									echo 1
+								'''
+							}
+						}
+					}
+				}
+				stage('CHESS-PROTO推送') {
+				    when {
+					    expression {
+						    env.SERVER_CONTENT =~ 'CHESS-PROTO'
+						}
+					}
+					steps {
+					    sh'''
+							echo 1
+						'''
+					}
+				}
+				stage('CHESS-COMMON推送') {
+				    when {
+					    expression {
+						   env.SERVER_CONTENT =~ 'CHESS-COMMON'
+						}
+					}
+					steps {
+					    sh'''
+							echo 1
+						'''
+					}
+				}
+				stage('LOCAL-COMMON推送') {
+				    when {
+					    expression {
+						    env.SERVER_CONTENT =~ 'LOCAL-COMMON'
+						}
+					}
+					steps {
+					    sh'''
+							echo 1
+						'''
+					}
+				}
+			}
+		}
+		stage('Gate节点配置推送') {
+		    failFast false
+			when {
+			    expression {
+				    env.SERVER_NODE =~ 'gate'
+				}
+			}
+			parallel {
+			    stage('CHESS-RELEASE') {
+				    when {
+					    expression {
+						    env.SERVER_CONTENT =~ 'CHESS-RELEASE'
+						}
+					}
+				steps {
+				    sh'''
+						echo 1
+					'''
+					}
+				}
+			}
+		}
+		stage('Login节点推送') {
+		    failFast false
+			when {
+			    expression {
+				    env.SERVER_NODE =~ 'login'
+				}
+			}
+			parallel {
+				stage('CHESS-GAMES') {
+					when {
+						expression {
+							env.SERVER_CONTENT =~ 'CHESS-GAMES'
+						}
+					}
+					steps {
+						sh'''
+							echo 1
+						'''
+					}
+				}
+				stage('CHESS-COMMON推送'){
+					when {
+						expression {
+							env.SERVER_CONTENT =~ 'CHESS-COMMON'
+						}
+					}
+					steps {
+						sh'''
+							echo 1
+						'''
+					}
+				}
+				stage('CHESS-PROTO推送') {
+					when {
+						expression {
+							env.SERVER_CONTENT =~ 'CHESS-PROTO'
+						}
+					}
+					steps {
+						sh'''
+							echo 1
+						'''
+					}
+				}
+				stage('CHESS-RELEASE推送') {
+					when {
+						expression {
+							env.SERVER_CONTENT =~ 'CHESS-RELEASE'
+						}
+					}
+					steps {
+						sh'''
+							echo 1
+						'''
+					}
+				}
+				stage('LOCAL-COMMON推送') {
+				    when {
+					    expression {
+						    env.SERVER_CONTENT =~ 'LOCAL-COMMON'
+						}
+					}
+					steps {
+					    sh'''
+							echo 1
+						'''
+					}
+				}
+			}
+		}
+		stage('Tcp节点推送') {
+		    failFast false
+			when {
+			    expression {
+				    env.SERVER_NODE =~ 'tcp'
+				}
+			}
+			parallel {
+				stage('CHESS-COMMON推送'){
+					when {
+						expression {
+							env.SERVER_CONTENT =~ 'CHESS-COMMON'
+						}
+					}
+					steps {
+						sh'''
+							echo 1
+						'''
+					}
+				}
+				stage('CHESS-PROTO推送') {
+					when {
+						expression {
+							env.SERVER_CONTENT =~ 'CHESS-PROTO'
+						}
+					}
+					steps {
+						sh'''
+							echo 1
+						'''
+					}
+				}
+				stage('CHESS-GAMES') {
+					when {
+						expression {
+							env.SERVER_CONTENT =~ 'CHESS-GAMES'
+						}
+					}
+					steps {
+						sh'''
+							echo 1
+						'''
+					}
+				}
+				stage('LOCAL-COMMON推送') {
+				    when {
+					    expression {
+						    env.SERVER_CONTENT =~ 'LOCAL-COMMON'
+						}
+					}
+					steps {
+					    sh'''
+							echo 1
+						'''
+					}
+				}
+			}
+		}
+		stage('Tcp节点配置推送') {
+		    failFast false
+			when {
+			    expression {
+				    env.SERVER_NODE =~ 'tcp'
+				}
+			}
+			parallel {
+			    stage('CHESS-RELEASE') {
+				    when {
+					    expression {
+						    env.SERVER_CONTENT =~ 'CHESS-RELEASE'
+						}
+					}
+				steps {
+				    sh'''
+						echo 1
+					'''
+					}
+				}
+			}
+		}
+		stage('game-A节点推送') {
+		    failFast false
+			when {
+			    expression {
+				    env.SERVER_NODE =~ 'game-A'
+				}
+			}
+			parallel {
+				stage('CHESS-COMMON推送'){
+					when {
+						expression {
+							env.SERVER_CONTENT =~ 'CHESS-COMMON'
+						}
+					}
+					steps {
+						sh'''
+							echo 1
+						'''
+					}
+				}
+				stage('CHESS-PROTO推送') {
+					when {
+						expression {
+							env.SERVER_CONTENT =~ 'CHESS-PROTO'
+						}
+					}
+					steps {
+						sh'''
+							echo 1
+						'''
+					}
+				}
+				stage('CHESS-GAMES') {
+					when {
+						expression {
+							env.SERVER_CONTENT =~ 'CHESS-GAMES'
+						}
+					}
+					steps {
+						sh'''
+							echo 1
+						'''
+					}
+				}
+				stage('CHESS-RELEASE推送') {
+					when {
+						expression {
+							env.SERVER_CONTENT =~ 'CHESS-RELEASE'
+						}
+					}
+					steps {
+						sh'''
+							echo 1
+						'''
+					}
+				}
+				stage('LOCAL-COMMON推送') {
+				    when {
+					    expression {
+						    env.SERVER_CONTENT =~ 'LOCAL-COMMON'
+						}
+					}
+					steps {
+					    sh'''
+							echo 1
+						'''
+					}
+				}
+				stage('CHESS-PAY推送') {
+				    when {
+					    expression {
+						    env.SERVER_CONTENT =~ 'CHESS-PAY'
+						}
+					}
+					steps {
+					    sh'''
+							echo 1
+						'''
+					}
+				}
+			}
+		}
+		stage('game-B节点推送') {
+		    failFast false
+			when {
+			    expression {
+				    env.SERVER_NODE =~ 'game-B'
+				}
+			}
+			parallel {
+				stage('CHESS-COMMON推送'){
+					when {
+						expression {
+							env.SERVER_CONTENT =~ 'CHESS-COMMON'
+						}
+					}
+					steps {
+						sh'''
+							echo 1
+						'''
+					}
+				}
+				stage('CHESS-PROTO推送') {
+					when {
+						expression {
+							env.SERVER_CONTENT =~ 'CHESS-PROTO'
+						}
+					}
+					steps {
+						sh'''
+							echo 1
+						'''
+					}
+				}
+				stage('CHESS-GAMES') {
+					when {
+						expression {
+							env.SERVER_CONTENT =~ 'CHESS-GAMES'
+						}
+					}
+					steps {
+						sh'''
+							echo 1
+						'''
+					}
+				}
+				stage('CHESS-RELEASE推送') {
+					when {
+						expression {
+							env.SERVER_CONTENT =~ 'CHESS-RELEASE'
+						}
+					}
+					steps {
+						sh'''
+							echo 1
+						'''
+					}
+				}
+				stage('LOCAL-COMMON推送') {
+				    when {
+					    expression {
+						    env.SERVER_CONTENT =~ 'LOCAL-COMMON'
+						}
+					}
+					steps {
+					    sh'''
+							echo 1
+						'''
+					}
+				}
+			}
+		}
+		stage('版本控制') {
+		    failFast false
+			when {
+			    expression {
+				    env.version_id != ''
+				}
+			}
+			steps {
+			    sh'''
+					#查看当前所有版本
+					ls -lrX /data/${NODE_NAME}/${sub_project}/
+					#每次发布完自动保留五个历史版本
+					/opt/script/keepfive.sh ${NODE_NAME} ${sub_project}
+				'''
+			}
+		}
+		stage('权限修改') {
+		    failFast false
+			parallel {
+			    stage('auth节点') {
+				    when {
+					    expression {
+						    env.SERVER_NODE =~ 'auth'
+						}
+					}
+					steps {
+					    sh'''
+							echo 1
+						'''
+					}
+				}
+				stage('gate节点') {
+				    when {
+					    expression {
+						    env.SERVER_NODE =~ 'gate'
+						}
+					}
+					steps {
+					    sh'''
+							echo 1
+						'''
+					}
+				}
+				stage('login节点') {
+				    when {
+					    expression {
+						    env.SERVER_NODE =~ 'login'
+						}
+					}
+					steps {
+					    sh'''
+							echo 1
+						'''
+					}
+				}
+				stage('tcp节点') {
+				    when {
+					    expression {
+						    env.SERVER_NODE =~ 'tcp'
+						}
+					}
+					steps {
+					    sh'''
+							echo 1
+						'''
+					}
+				}
+				stage('game-A') {
+				    when {
+					    expression {
+						    env.SERVER_NODE =~ 'game-A'
+						}
+					}
+					steps {
+					    sh'''
+							echo 1
+						'''
+					}
+				}
+				stage('game-B') {
+				    when {
+					    expression {
+						    env.SERVER_NODE =~ 'game-B'
+						}
+					}
+					steps {
+					    sh'''
+							echo 1
+						'''
+					}
+				}
+			}
+		}
+		stage('服务重载') {
+		    failFast false
+			parallel {
+			    stage('auth重载') {
+				    when {
+					    expression {
+						    env.SERVER_NODE =~ 'auth'
+						}
+					}
+					stages {
+						stage('logindbsvrd重载') {
+						    when {
+							    expression {
+								    env.SERVER_AUTH =~ 'logindbsvrd'
+								}
+							}
+							steps {
+							    sh'''
+									echo 1
+								'''
+							}
+						}
+						stage('authsvrd重载') {
+						    when {
+							    expression {
+								    env.SERVER_AUTH =~ 'authsvrd'
+								}
+							}
+							steps {
+							    sh'''
+									echo 1
+								'''
+							}
+						}
+					}
+				}
+				stage('login重载') {
+				    when {
+					    expression {
+						    env.SERVER_NODE =~ 'login'
+						}
+					}
+					stages {
+					    stage('loginsvrd重载') {
+						    when {
+							    expression {
+								    env.SERVER_LOGIN =~ 'loginsvrd'
+								}
+							}
+							steps {
+							    sh'''
+									echo 1
+								'''
+							}
+						}
+					}
+				}
+				stage('gate重载') {
+				    when {
+					    expression {
+						    env.SERVER_NODE =~ 'gate'
+						}
+					}
+					stages {
+					    stage('datadbsvrd重载') {
+						    when {
+							    expression {
+								    env.SERVER_GATE =~ 'datadbsvrd'
+								}
+							}
+							steps {
+							    sh'''
+									echo 1
+								'''
+							}
+						}
+						stage('gatesvrd重载') {
+						    when {
+							    expression {
+								    env.SERVER_GATE =~ 'gatesvrd'
+								}
+							}
+							steps {
+							    sh'''
+									echo 1
+								'''
+							}
+						}
+					}
+				}
+				stage('tcp重载') {
+				    when {
+					    expression {
+						    env.SERVER_NODE =~ 'tcp'
+						}
+					}
+					stages {
+					    stage('tcpsvrd重载') {
+						    when {
+							    expression {
+								    env.SERVER_TCP =~ 'tcpsvrd'
+								}
+							}
+							steps {
+							    sh'''
+									echo 1
+								'''
+							}
+						}
+					}
+				}
+				stage('game-A重载') {
+				    when {
+					    expression {
+						    env.SERVER_NODE =~ 'game-A'
+						}
+					}
+					stages {
+					    stage('game-A重载') {
+						    steps {
+							    sh'''
+for server in ${SERVER_GAME_A[@]}
+do
+  ansible-playbook -i /etc/ansible/inventory/${NODE_NAME} /etc/ansible/playbook/${sub_project}/update.yml -e 'server=${server} hosts=game-A method=${Method}' --tags 'updatelua'
+done
+								'''
+							}
+						}
+						stage('pay重载') {
+						    when {
+							    expression {
+								    env.SERVER_CONTENT =~ 'CHESS-PAY'
+								}
+							}
+						    steps {
+							    sh'''
+									echo 1
+								'''
+							}
+						}
+					}
+				}
+				stage('game-B重载') {
+				    when {
+					    expression {
+						    env.SERVER_NODE =~ 'game-B'
+						}
+					}
+					stages {
+					    stage('game-B重载') {
+						    steps {
+							    sh'''
+for server in ${SERVER_GAME_B[@]}
+do
+  ansible-playbook -i /etc/ansible/inventory/${NODE_NAME} /etc/ansible/playbook/${sub_project}/update.yml -e 'server=${server} hosts=game-B method=${Method}' --tags 'updatelua'
+done
+								'''
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
